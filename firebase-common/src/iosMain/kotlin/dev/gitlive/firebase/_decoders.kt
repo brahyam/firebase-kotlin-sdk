@@ -11,7 +11,14 @@ import kotlinx.serialization.descriptors.StructureKind
 
 actual fun FirebaseDecoder.structureDecoder(descriptor: SerialDescriptor, decodeDouble: (value: Any?) -> Double?): CompositeDecoder = when(descriptor.kind) {
     StructureKind.CLASS, StructureKind.OBJECT, PolymorphicKind.SEALED -> (value as Map<*, *>).let { map ->
-        FirebaseClassDecoder(decodeDouble, map.size, { map.containsKey(it) }) { desc, index -> map[desc.getElementName(index)] }
+        FirebaseClassDecoder(decodeDouble, map.size, { map.containsKey(it) }) { desc, index ->
+            val elementName = desc.getElementName(index)
+            if (desc.kind is PolymorphicKind && elementName == "value") {
+                map
+            } else {
+                map[desc.getElementName(index)]
+            }
+        }
     }
     StructureKind.LIST -> (value as List<*>).let {
         FirebaseCompositeDecoder(decodeDouble, it.size) { _, index -> it[index] }
